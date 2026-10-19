@@ -28,6 +28,26 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+			<TestableReference
+			   skipped = "NO">
+			   <BuildableReference
+			      BuildableIdentifier = "primary"
+			      BlueprintIdentifier = "480BC3E8FFC8B8184846828C"
+			      BuildableName = "ScrumdingerTests.xctest"
+			      BlueprintName = "ScrumdingerTests"
+			      ReferencedContainer = "container:Scrumdinger.xcodeproj">
+			   </BuildableReference>
+			</TestableReference>
+			<TestableReference
+			   skipped = "NO">
+			   <BuildableReference
+			      BuildableIdentifier = "primary"
+			      BlueprintIdentifier = "F3C354920462C88EAF097983"
+			      BuildableName = "ScrumdingerUITests.xctest"
+			      BlueprintName = "ScrumdingerUITests"
+			      ReferencedContainer = "container:Scrumdinger.xcodeproj">
+			   </BuildableReference>
+			</TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

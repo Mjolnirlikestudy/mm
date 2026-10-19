@@ -21,7 +21,14 @@ final class ScrumStore: ObservableObject {
     private var saveTask: Task<Void, Never>?
 
     init(fileURL: URL? = nil) {
-        self.fileURL = fileURL ?? Self.defaultFileURL
+        let resolvedURL = fileURL ?? Self.defaultFileURL
+        #if DEBUG
+        // UI 测试用：启动时清空本地数据，保证截图与用例可重复。
+        if ProcessInfo.processInfo.arguments.contains("-resetData") {
+            try? FileManager.default.removeItem(at: resolvedURL)
+        }
+        #endif
+        self.fileURL = resolvedURL
         load()
     }
 

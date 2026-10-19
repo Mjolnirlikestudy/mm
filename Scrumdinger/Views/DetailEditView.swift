@@ -30,8 +30,7 @@ struct DetailEditView: View {
         Form {
             Section("Meeting Info") {
                 TextField("Title", text: $draft.title)
-                TextField("Attendees", text: attendeesText, axis: .vertical)
-                    .lineLimit(1...3)
+                TextField("Attendees", text: attendeesText)
                 Stepper(value: $draft.lengthInMinutes, in: 5...30, step: 5) {
                     Text("\(draft.lengthInMinutes) minutes")
                 }

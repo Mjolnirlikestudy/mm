@@ -55,6 +55,7 @@ struct DetailView: View {
                                 Text(history.date, style: .date)
                             }
                         }
+                        .accessibilityIdentifier("history-row")
                     }
                 }
             }
