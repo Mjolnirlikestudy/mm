@@ -27,14 +27,23 @@ final class AudioRecorder: ObservableObject {
     }
 
     func requestPermissionAndStart() {
-        AVAudioApplication.requestRecordPermission { [weak self] granted in
-            Task { @MainActor in
-                guard let self else { return }
-                if granted {
-                    self.start()
-                } else {
-                    self.alert = Alert(message: "无法访问麦克风，请在系统设置中允许 Scrumdinger 使用麦克风。")
-                }
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { [weak self] granted in
+                self?.handlePermission(granted)
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
+                self?.handlePermission(granted)
+            }
+        }
+    }
+
+    private func handlePermission(_ granted: Bool) {
+        Task { @MainActor in
+            if granted {
+                self.start()
+            } else {
+                self.alert = Alert(message: "无法访问麦克风，请在系统设置中允许 Scrumdinger 使用麦克风。")
             }
         }
     }

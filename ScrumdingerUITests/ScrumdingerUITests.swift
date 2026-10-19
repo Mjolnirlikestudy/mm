@@ -23,11 +23,9 @@ final class ScrumdingerUITests: XCTestCase {
 
         app.buttons["Done"].tap()
 
-        // 列表是懒加载的，新卡片在屏幕外，先滚动再断言
         app.swipeUp()
         XCTAssertTrue(app.staticTexts["Team Sync"].waitForExistence(timeout: 5))
 
-        // 重新启动后数据仍然存在，验证 JSON 持久化（第二次启动不能再带 -resetData）
         app.terminate()
         app.launchArguments = ["-AppleLanguages", "(en)"]
         app.launch()
@@ -42,34 +40,51 @@ final class ScrumdingerUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Daily Scrums"].waitForExistence(timeout: 5))
-        saveScreenshot("01-scrums-list")
+        saveScreenshot("01-daily-scrums")
 
+        // 点击卡片直接开始计时
         app.staticTexts["Design"].tap()
-        XCTAssertTrue(app.navigationBars["Design"].waitForExistence(timeout: 5))
-        saveScreenshot("02-detail")
-
-        app.navigationBars.buttons["Edit"].tap()
-        XCTAssertTrue(app.navigationBars["Design"].waitForExistence(timeout: 5))
-        saveScreenshot("03-edit")
-        app.buttons["Cancel"].tap()
-
-        app.staticTexts["Start Meeting"].tap()
         XCTAssertTrue(app.staticTexts["Current Speaker"].waitForExistence(timeout: 5))
         sleep(2)
-        saveScreenshot("04-meeting")
+        saveScreenshot("02-meeting")
 
+        // 下一位：弹出选择发言人的面板
         app.buttons["Next"].tap()
-        sleep(2)
-        saveScreenshot("05-meeting-next-speaker")
+        XCTAssertTrue(app.navigationBars["Next Speaker"].waitForExistence(timeout: 5))
+        saveScreenshot("03-speaker-picker")
+
+        app.staticTexts["Daisy"].tap()
+        XCTAssertTrue(app.staticTexts["Daisy"].waitForExistence(timeout: 5))
+        sleep(1)
+        saveScreenshot("04-meeting-next")
 
         app.buttons["End"].tap()
-        XCTAssertTrue(app.navigationBars["Design"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["No history yet"].exists)
-        saveScreenshot("06-detail-history")
+        XCTAssertTrue(app.navigationBars["Daily Scrums"].waitForExistence(timeout: 5))
 
-        app.buttons["history-row"].tap()
-        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
-        saveScreenshot("07-history")
+        // 我的
+        app.tabBars.buttons["Me"].tap()
+        XCTAssertTrue(app.navigationBars["Me"].waitForExistence(timeout: 5))
+        saveScreenshot("05-profile")
+
+        openQuickAction(app, title: "My Tasks")
+        saveScreenshot("06-tasks")
+
+        app.buttons["New Task"].tap()
+        XCTAssertTrue(app.navigationBars["New Task"].waitForExistence(timeout: 5))
+        saveScreenshot("07-new-task")
+        app.buttons["Cancel"].tap()
+
+        goBack(app)
+        openQuickAction(app, title: "Schedule")
+        saveScreenshot("08-schedule")
+
+        goBack(app)
+        openQuickAction(app, title: "Blockers")
+        saveScreenshot("09-blockers")
+
+        goBack(app)
+        openQuickAction(app, title: "Meeting Notes")
+        saveScreenshot("10-meeting-notes")
     }
 
     func testChineseLocalizationScreenshot() {
@@ -78,27 +93,36 @@ final class ScrumdingerUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["每日站会"].waitForExistence(timeout: 5))
-        saveScreenshot("08-scrums-list-zh")
+        saveScreenshot("11-daily-scrums-zh")
 
-        app.staticTexts["Design"].tap()
-        XCTAssertTrue(app.navigationBars["Design"].waitForExistence(timeout: 5))
-        saveScreenshot("09-detail-zh")
+        app.tabBars.buttons["我的"].tap()
+        XCTAssertTrue(app.navigationBars["我的"].waitForExistence(timeout: 5))
+        saveScreenshot("12-profile-zh")
     }
 
     func testDarkModeScreenshot() {
-        let app = XCUIApplication()
         // 深色模式由模拟器外观控制（simctl ui booted appearance dark），这里只负责截图
+        let app = XCUIApplication()
         app.launchArguments = ["-resetData", "-AppleLanguages", "(en)"]
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Daily Scrums"].waitForExistence(timeout: 5))
-        saveScreenshot("10-scrums-list-dark")
+        saveScreenshot("13-daily-scrums-dark")
 
-        app.staticTexts["Design"].tap()
-        app.staticTexts["Start Meeting"].tap()
-        XCTAssertTrue(app.staticTexts["Current Speaker"].waitForExistence(timeout: 5))
-        sleep(2)
-        saveScreenshot("11-meeting-dark")
+        app.tabBars.buttons["Me"].tap()
+        XCTAssertTrue(app.navigationBars["Me"].waitForExistence(timeout: 5))
+        saveScreenshot("14-profile-dark")
+    }
+
+    private func openQuickAction(_ app: XCUIApplication, title: String) {
+        let element = app.staticTexts[title]
+        XCTAssertTrue(element.waitForExistence(timeout: 5), "Missing quick action \(title)")
+        element.tap()
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
+    }
+
+    private func goBack(_ app: XCUIApplication) {
+        app.navigationBars.buttons.element(boundBy: 0).tap()
     }
 
     /// 同时保存到测试结果（attachment）与 runner 沙盒 Documents，方便拷回仓库。

@@ -4,29 +4,42 @@ struct CardView: View {
     let scrum: DailyScrum
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(scrum.title)
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
+        HStack(spacing: 14) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(scrum.theme.main)
+                .frame(width: 6, height: 44)
 
-            Spacer(minLength: 12)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(scrum.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
 
-            HStack {
-                Label("\(scrum.attendees.count)", systemImage: "person.3")
-                    .accessibilityLabel("\(scrum.attendees.count) attendees")
-                Spacer()
-                Label("\(scrum.lengthInMinutes) min", systemImage: "clock")
-                    .accessibilityLabel("\(scrum.lengthInMinutes) minute meeting")
+                HStack(spacing: 14) {
+                    Label("\(scrum.attendees.count) members", systemImage: "person.3.fill")
+                    Label("\(scrum.lengthInMinutes) min", systemImage: "clock")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            .font(.caption)
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "timer")
+                .font(.title3)
+                .foregroundStyle(scrum.theme.main)
         }
-        .padding()
-        .foregroundStyle(scrum.theme.accent)
+        .cardBackground()
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Starts the meeting timer")
     }
 }
 
 #Preview {
-    CardView(scrum: DailyScrum.sampleData[0])
-        .background(DailyScrum.sampleData[0].theme.main)
-        .previewLayout(.sizeThatFits)
+    VStack {
+        ForEach(DailyScrum.sampleData) { scrum in
+            CardView(scrum: scrum)
+        }
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }

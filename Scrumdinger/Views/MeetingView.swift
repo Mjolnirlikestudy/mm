@@ -5,6 +5,7 @@ struct MeetingView: View {
     @StateObject private var timer: ScrumTimer
     @StateObject private var recorder = AudioRecorder()
     @Environment(\.dismiss) private var dismiss
+    @State private var isSelectingSpeaker = false
 
     init(scrum: Binding<DailyScrum>) {
         _scrum = scrum
@@ -34,14 +35,14 @@ struct MeetingView: View {
 
             MeetingFooterView(attendees: scrum.attendees,
                               speakerIndex: timer.activeSpeakerIndex) {
-                timer.nextSpeaker()
+                isSelectingSpeaker = true
             }
         }
         .padding(.vertical)
         .navigationTitle(scrum.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button {
                     recorder.toggle()
                 } label: {
@@ -65,7 +66,7 @@ struct MeetingView: View {
             timer.stop()
             recorder.stop()
         }
-        .onChange(of: timer.isFinished) { _, isFinished in
+        .onChange(of: timer.isFinished) { isFinished in
             if isFinished {
                 endMeeting()
             }
@@ -74,6 +75,13 @@ struct MeetingView: View {
             Alert(title: Text("Recording"),
                   message: Text(alert.message),
                   dismissButton: .default(Text("OK")))
+        }
+        .sheet(isPresented: $isSelectingSpeaker) {
+            SpeakerPickerView(attendees: scrum.attendees,
+                              activeIndex: timer.activeSpeakerIndex,
+                              completedIndices: timer.completedSpeakerIndices) { index in
+                timer.selectSpeaker(index)
+            }
         }
     }
 

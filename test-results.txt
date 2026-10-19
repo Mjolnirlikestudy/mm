@@ -5,27 +5,27 @@
 xcodebuild -project Scrumdinger.xcodeproj -scheme Scrumdinger -destination 'platform=iOS Simulator,name=iPhone 15' test
 ```
 
-环境：Xcode 15.1 (15C65)，iOS 17.2 模拟器（iPhone 15）
+环境：Xcode 15.1 (15C65)，部署目标 iOS 16.0，iOS 17.2 模拟器（iPhone 15）
 
 ## 结果
 ```
-Test Suite 'AttendeeServiceTests' passed at 2026-10-19 16:57:04.861.
+Test Suite 'AttendeeServiceTests' passed at 2026-10-19 17:20:36.931.
 	 Executed 3 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
-Test Suite 'ModelTests' passed at 2026-10-19 16:57:04.869.
+Test Suite 'ModelTests' passed at 2026-10-19 17:20:36.940.
 	 Executed 5 tests, with 0 failures (0 unexpected) in 0.007 (0.008) seconds
-Test Suite 'ScrumStoreTests' passed at 2026-10-19 16:57:04.881.
-	 Executed 4 tests, with 0 failures (0 unexpected) in 0.010 (0.011) seconds
-Test Suite 'ScrumTimerTests' passed at 2026-10-19 16:57:04.890.
-	 Executed 8 tests, with 0 failures (0 unexpected) in 0.006 (0.008) seconds
-Test Suite 'ScrumdingerTests.xctest' passed at 2026-10-19 16:57:04.890.
-	 Executed 20 tests, with 0 failures (0 unexpected) in 0.027 (0.035) seconds
-Test Suite 'All tests' passed at 2026-10-19 16:57:04.891.
-	 Executed 20 tests, with 0 failures (0 unexpected) in 0.027 (0.036) seconds
-Test Suite 'ScrumdingerUITests' passed at 2026-10-19 16:57:57.123.
-	 Executed 4 tests, with 0 failures (0 unexpected) in 48.776 (48.779) seconds
-Test Suite 'ScrumdingerUITests.xctest' passed at 2026-10-19 16:57:57.124.
-	 Executed 4 tests, with 0 failures (0 unexpected) in 48.776 (48.780) seconds
-Test Suite 'All tests' passed at 2026-10-19 16:57:57.125.
-	 Executed 4 tests, with 0 failures (0 unexpected) in 48.776 (48.782) seconds
+Test Suite 'ScrumStoreTests' passed at 2026-10-19 17:20:36.953.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.012 (0.013) seconds
+Test Suite 'ScrumTimerTests' passed at 2026-10-19 17:20:36.965.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.008 (0.011) seconds
+Test Suite 'ScrumdingerTests.xctest' passed at 2026-10-19 17:20:36.965.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 0.031 (0.039) seconds
+Test Suite 'All tests' passed at 2026-10-19 17:20:36.965.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 0.031 (0.040) seconds
+Test Suite 'ScrumdingerUITests' passed at 2026-10-19 17:21:38.574.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 58.084 (58.087) seconds
+Test Suite 'ScrumdingerUITests.xctest' passed at 2026-10-19 17:21:38.575.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 58.084 (58.088) seconds
+Test Suite 'All tests' passed at 2026-10-19 17:21:38.577.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 58.084 (58.090) seconds
 ** TEST SUCCEEDED **
 ```

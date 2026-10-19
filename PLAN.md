@@ -151,3 +151,15 @@ Scrumdinger/
 ### 验收对照
 
 评分表八个维度均有对应实现与说明；测试命令、截图与报告分别见 `test-results.txt`、`screenshots/`、`REPORT.md`。
+
+## 11. 第二阶段扩展（同日）
+
+按新需求把 App 扩成双 Tab 结构，并降到 iOS 16：
+
+- `RootTabView`：每日站会 / 我的；
+- 每日站会改为浅色卡片（圆角 14、柔和阴影），点击卡片直接开始计时，长按进详情；
+- 「我的」：个人信息、4 个快捷入口、设置列表；
+- 新增我的任务、日程会议、阻塞事项、站会纪要四个 MVVM 页面；
+- 会议页「下一位」改为弹出 `SpeakerPickerView`，可指定任意未发言的人，计时不中断；
+- 部署目标 17.2 → 16.0，替换 `ContentUnavailableView`、`AVAudioApplication`、双参数 `onChange`、`.topBarTrailing` 等 iOS 17 API；
+- 单测 22 个、UI 测试 4 个，全部通过。

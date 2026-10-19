@@ -83,6 +83,39 @@ final class ScrumTimerTests: XCTestCase {
         XCTAssertEqual(timer.secondsElapsed, 0)
     }
 
+    func testSelectSpeakerOutOfOrder() {
+        let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
+        for _ in 0..<5 {
+            timer.tick()
+        }
+
+        timer.selectSpeaker(3)
+
+        // 时钟仍然只走了 5 秒，直接由 D 发言
+        XCTAssertEqual(timer.secondsElapsed, 5)
+        XCTAssertEqual(timer.activeSpeakerIndex, 3)
+        XCTAssertEqual(timer.completedSpeakerIndices, [0])
+        XCTAssertEqual(timer.currentQuota, 198)
+
+        let spans = timer.speakerSpans()
+        XCTAssertEqual(spans.map(\.id), [0, 3, 1, 2])
+        XCTAssertEqual(spans[1].start, 5)
+        XCTAssertEqual(spans[1].end, 203)
+        XCTAssertEqual(spans.reduce(0) { $0 + ($1.end - $1.start) }, 600)
+    }
+
+    func testSelectSpeakerIgnoresCompletedOrActiveSpeaker() {
+        let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
+
+        timer.selectSpeaker(0)   // 当前发言人，忽略
+        XCTAssertEqual(timer.activeSpeakerIndex, 0)
+
+        timer.selectSpeaker(2)
+        timer.selectSpeaker(0)   // A 已经讲完，不能再次选择
+        XCTAssertEqual(timer.activeSpeakerIndex, 2)
+        XCTAssertEqual(timer.completedSpeakerIndices, [0])
+    }
+
     func testEmptyAttendeesDoesNotCrash() {
         let timer = ScrumTimer(lengthInMinutes: 5, attendees: [])
         timer.tick()

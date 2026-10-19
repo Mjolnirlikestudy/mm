@@ -5,7 +5,7 @@
 - 项目名称：Scrumdinger 每日站会管理 App
 - 开发者 / 学号：__________
 - 完成日期：2026-10-19
-- 开发环境：Xcode 15.1（15C65） / iOS 17.2 SDK / iPhone 15 模拟器（iOS 17.2）
+- 开发环境：Xcode 15.1（15C65） / 部署目标 iOS 16.0 / iPhone 15 模拟器（iOS 17.2）
 - 工程：`Scrumdinger.xcodeproj`，Bundle ID `com.student.scrumdinger`，无第三方依赖
 
 ## 2. 项目简介
@@ -29,22 +29,33 @@ Scrumdinger 面向需要主持每日站会（Daily Scrum）的软件团队。站
 6. 历史记录：会议结束自动生成，可查看并回放录音；
 7. 会议录音：AVFoundation 录制，保存在沙盒；
 8. 网络示例：编辑页从公开接口拉取参会者名单；
-9. 中英双语与深色模式。
+9. 中英双语与深色模式；
+10. 底部 TabView：每日站会 / 我的双标签；
+11. 个人中心：头像、部门角色、4 个快捷入口与设置列表；
+12. 我的任务 / 日程会议 / 阻塞事项 / 站会纪要 四个 MVVM 子页面。
 
 ## 3. 技术方案与架构
 
 ### 视图层级与导航
 
 ```
-ScrumsView（NavigationStack + List）
-├── NewScrumSheet（sheet）→ DetailEditView
-└── DetailView（NavigationLink）
-    ├── DetailEditView（sheet，含 ThemePicker）
-    ├── MeetingView（NavigationLink）
-    │   ├── MeetingHeaderView
-    │   ├── MeetingTimerView → SpeakerArc × N
-    │   └── MeetingFooterView
-    └── HistoryView（NavigationLink）
+RootTabView（TabView）
+├── 每日站会：ScrumsView（NavigationStack + ScrollView）
+│   ├── CardView（点击 → MeetingView）
+│   ├── NewScrumSheet（sheet）→ DetailEditView
+│   ├── MeetingView
+│   │   ├── MeetingHeaderView
+│   │   ├── MeetingTimerView → SpeakerArc × N
+│   │   ├── MeetingFooterView → SpeakerPickerView（sheet）
+│   │   └── 结束时写入 History
+│   ├── 长按卡片 → DetailView → DetailEditView / HistoryView
+│   └── 读取失败 → ErrorView（sheet）
+└── 我的：ProfileView（NavigationStack + ScrollView）
+    ├── MyTasksView → NewTaskSheet
+    ├── ScheduleView
+    ├── BlockersView → NewBlockerSheet
+    ├── MeetingNotesView
+    └── AccountSettingsView / NotificationSettingsView / AboutView
 ```
 
 ### 数据模型
@@ -54,11 +65,17 @@ ScrumsView（NavigationStack + List）
 | `DailyScrum` | `id: UUID`、`title`、`attendees: [String]`、`lengthInMinutes`、`theme`、`history: [History]` | 站会定义，`Codable` + `Identifiable` |
 | `Theme` | `id`、`name`、`mainColor: ColorValue`、`accentColor: ColorValue` | 7 套预置主题；`ColorValue` 存 RGB，解决 `Color` 不可 Codable 的问题 |
 | `History` | `id`、`date`、`attendees`、`lengthInMinutes`、`transcript`、`recordingFileName` | 会议结束追加；录音文件名为可选，兼容旧数据 |
-| `ScrumTimer` | `secondsElapsed`、`activeSpeakerIndex`、`isFinished`、`lengthInMinutes`、`attendees` | `ObservableObject`，`tick()` 可独立驱动 |
+| `ScrumTimer` | `secondsElapsed`、`activeSpeakerIndex`、`isFinished`、`completedSpeakerIndices`、`lengthInMinutes`、`attendees` | `ObservableObject`，`tick()` 可独立驱动；支持乱序指定发言人 |
+| `UserProfile` | `name`、`department`、`role`、`avatarSystemName` | 个人中心展示信息 |
+| `TaskItem` / `TaskStatus` | `title`、`groupName`、`status`、`dueDate` | 任务卡片与状态标签 |
+| `MeetingEvent` | `title`、`groupName`、`startTime`、`isJoined` | 日程会议卡片 |
+| `BlockerItem` / `BlockerPriority` | `title`、`relatedTask`、`groupName`、`owner`、`priority` | 阻塞事项，红 / 黄优先级 |
+| `RetroNote` | `groupName`、`date`、`summary` | 站会纪要历史 |
 
 ### 状态管理与数据流
 
-- `ScrumsView` 持有 `@StateObject ScrumStore`，`List($store.scrums)` 用绑定把修改写回数组；
+- `ScrumsView` 持有 `@StateObject ScrumStore`，`ScrollView + ForEach($store.scrums)` 用绑定把修改写回数组；
+- 「我的」模块采用 MVVM：`ProfileViewModel`、`TaskListViewModel`、`ScheduleViewModel`、`BlockerListViewModel`、`RetroListViewModel` 各自用 `@Published` 暴露数据，View 只负责渲染并调用 ViewModel 的新增 / 加入方法；
 - 子页面用 `@Binding var scrum` 接收单个站会，编辑页内部用 `@State draft` 做草稿，点「完成」才回写，取消不影响原数据；
 - 会议页用 `@StateObject ScrumTimer`，`@Published` 的 `secondsElapsed` / `activeSpeakerIndex` 驱动头部、环形环与底部按钮刷新，没有任何手动刷新代码；
 - `ScrumStore` 监听数组变化，400 ms 合并后写 JSON，读写失败转成 `ErrorWrapper` 由 `ErrorView` 呈现。
@@ -69,7 +86,7 @@ ScrumsView（NavigationStack + List）
 
 ### 4.1 SwiftUI 声明式 UI
 
-整个 App 由结构体视图组合而成，没有 `UIViewController`。列表用 `List($scrums)` 直接生成绑定，导航用 `NavigationStack` + `NavigationLink`，模态用 `.sheet`。主题色、字号、间距全部通过修饰符声明，深色模式与 Dynamic Type 自动适配。
+整个 App 由结构体视图组合而成，没有 `UIViewController`。列表用 `ForEach` 遍历绑定数组，导航用 `NavigationStack` + `NavigationLink`，模态用 `.sheet`。主题色、字号、间距全部通过修饰符声明，深色模式与 Dynamic Type 自动适配。
 
 示例（会议页）：
 
@@ -115,8 +132,32 @@ path.addArc(center: center, radius: radius,
 ### 4.5 网络数据与测试
 
 - `AttendeeService` 用 `URLSession` + `async/await` 请求 `https://jsonplaceholder.typicode.com/users`，取 `name` 字段作为参会者；10 秒超时、校验 HTTP 状态码，失败在编辑页弹「网络错误」提示；解码逻辑抽成静态方法，用固定 JSON 做单测，测试不依赖网络；
-- 单元测试：20 个用例，覆盖初始时段均分、切人叮声回调、下一位不改变已用时间、跳过后的时间重分配、结束边界、空参会者、模型 Codable 往返、时钟格式、主题预置、存储首启播种 / 保存重载 / 损坏文件兜底、网络解码；
+- 单元测试：22 个用例，覆盖初始时段均分、切人叮声回调、下一位不改变已用时间、乱序指定发言人及时间重分配、结束边界、空参会者、模型 Codable 往返、时钟格式、主题预置、存储首启播种 / 保存重载 / 损坏文件兜底、网络解码；
 - UI 测试：4 个用例，覆盖新建站会并重启验证持久化、逐屏截图、中文界面截图、深色模式截图。
+
+### 4.6 「我的」模块与 MVVM
+
+个人中心用 `ProfileViewModel` 提供头像、姓名与部门角色；快捷入口和设置项都是 `NavigationLink`，把四个子页面压入同一个 `NavigationStack`，因此子页面左上角自动带返回按钮。
+
+四个子页面统一采用 MVVM：
+
+- `TaskListViewModel` 维护任务数组并提供 `add(title:groupName:status:dueDate:)`；
+- `ScheduleViewModel` 维护今日会议并提供 `join(_:)`；
+- `BlockerListViewModel` 维护卡点并提供新增方法；
+- `RetroListViewModel` 提供历史纪要。
+
+View 层只做三件事：用 `ForEach` 渲染 ViewModel 的 `@Published` 数组、用 `@State` 控制新建弹窗、把表单结果回传给 ViewModel。新建表单（`NewTaskSheet` / `NewBlockerSheet`）内部维护草稿状态，点「保存」才提交，取消不污染列表。
+
+视觉上统一使用 `cardBackground()` 修饰符：16pt 内边距、圆角 14、`black.opacity(0.06)` 的 8pt 柔和阴影；状态用胶囊标签，优先级用红 / 黄圆点，空列表用 `EmptyStateView` 占位。
+
+### 4.7 指定下一位发言人
+
+计时页底部「下一位」不再直接推进，而是弹出 `SpeakerPickerView`：
+
+- 面板列出所有参会者，当前发言人显示「发言中」，已发言的人显示「已发言」且不可点；
+- 选择任意还没发言的人即可切过去，`selectSpeaker(_:)` 只更新 `activeSpeakerIndex` 与 `activeStart`，**不修改 `secondsElapsed`**；
+- 被选中的人从 `pending` 队列移除，其他人保持原有顺序；
+- 当前发言人提前结束时，剩余时间在「还没发言的人」之间重新平均分配，所以总时长仍会在 10:00 结束、环也仍能填满。
 
 ## 5. 难点与解决方案
 
@@ -160,6 +201,12 @@ path.addArc(center: center, radius: radius,
 原因：String Catalog 的 key 必须与编译提取的格式符完全一致（`%lld` 还是 `%@`）。
 解决：构建后直接解包 `zh-Hans.lproj/Localizable.strings`（`plutil -p`）核对 key 与译文，确认 40 余条 key 全部命中。
 
+### 5.8 乱序指定发言人后的时间分配
+
+现象：支持「指定任意人」后，简单地把 `activeSpeakerIndex` 改掉会导致两个人抢同一段时间，环形环出现重叠或空洞。
+
+解决：把「还没发言的人」放进 `pending` 队列，已发言的人记录在 `completed` 里；`speakerSpans()` 按「已完成（按实际发言顺序）→ 当前 → 待发言（按原顺序）」拼接，所有时段长度相加恒等于总时长。`selectSpeaker` 只从 `pending` 里移除被选中的人，不会吞掉排队中的人；测试用 `testSelectSpeakerOutOfOrder` 验证了时段顺序为 `[A, D, B, C]` 且总和仍是 600 秒。
+
 ## 6. 测试与运行结果
 
 ### 测试命令
@@ -173,7 +220,7 @@ xcodebuild -project Scrumdinger.xcodeproj -scheme Scrumdinger \
 
 ```
 Test Suite 'ScrumdingerTests.xctest' passed
-  Executed 20 tests, with 0 failures
+  Executed 22 tests, with 0 failures
 Test Suite 'ScrumdingerUITests.xctest' passed
   Executed 4 tests, with 0 failures
 ** TEST SUCCEEDED **
@@ -183,7 +230,7 @@ Test Suite 'ScrumdingerUITests.xctest' passed
 
 ### 覆盖场景
 
-- 计时：初始时段均分、切人叮声回调、下一位不改变已用时间、跳过后的时间重分配、走到总时长结束、结束后再 tick、空参会者、进度比例；
+- 计时：初始时段均分、切人叮声回调、下一位不改变已用时间、乱序指定发言人、跳过后的时间重分配、走到总时长结束、结束后再 tick、空参会者、进度比例；
 - 模型：完整 Codable 往返、无录音字段的旧数据、时间格式化、主题预置与颜色往返；
 - 存储：首启播种并落盘、保存后重载、损坏 JSON 回退、目录不存在时自动创建；
 - 网络：固定 JSON 解码、limit 截断、非法数据抛错；
@@ -191,21 +238,21 @@ Test Suite 'ScrumdingerUITests.xctest' passed
 
 ### 运行截图
 
-| 站会列表 | 详情页 |
+| 每日站会 | 会议计时 |
 |---|---|
-| ![站会列表](screenshots/01-scrums-list.png) | ![详情页](screenshots/02-detail.png) |
+| ![每日站会](screenshots/01-daily-scrums.png) | ![会议计时](screenshots/02-meeting.png) |
 
-| 编辑页 | 会议计时（第二位发言人） |
+| 选择下一位 | 我的 |
 |---|---|
-| ![编辑页](screenshots/03-edit.png) | ![会议计时](screenshots/05-meeting-next-speaker.png) |
+| ![选择下一位](screenshots/03-speaker-picker.png) | ![我的](screenshots/05-profile.png) |
 
-| 历史记录 | 历史详情 |
+| 我的任务 | 阻塞事项 |
 |---|---|
-| ![历史记录](screenshots/06-detail-history.png) | ![历史详情](screenshots/07-history.png) |
+| ![我的任务](screenshots/06-tasks.png) | ![阻塞事项](screenshots/09-blockers.png) |
 
 | 中文界面 | 深色模式 |
 |---|---|
-| ![中文界面](screenshots/08-scrums-list-zh.png) | ![深色模式](screenshots/11-meeting-dark.png) |
+| ![中文界面](screenshots/12-profile-zh.png) | ![深色模式](screenshots/14-profile-dark.png) |
 
 ## 7. 总结与反思
 
