@@ -1,41 +1,43 @@
 import SwiftUI
 
 struct MeetingView: View {
+    @Binding var scrum: DailyScrum
     @State private var secondsElapsed = 0
     @State private var speakerIndex = 0
 
-    private let lengthInMinutes = 5
-    private let attendees = ["Cathy", "Daisy", "Simon", "Jonathan"]
-
     private var secondsRemaining: Int {
-        max(lengthInMinutes * 60 - secondsElapsed, 0)
+        max(scrum.lengthInMinutes * 60 - secondsElapsed, 0)
     }
 
     var body: some View {
         VStack(spacing: 20) {
             ProgressView(value: Double(secondsElapsed),
-                         total: Double(lengthInMinutes * 60))
+                         total: Double(scrum.lengthInMinutes * 60))
                 .padding(.horizontal)
 
             MeetingHeaderView(secondsRemaining: secondsRemaining,
-                              numberOfAttendees: attendees.count)
+                              numberOfAttendees: scrum.attendees.count)
 
-            MeetingTimerView(attendees: attendees,
+            MeetingTimerView(attendees: scrum.attendees,
                              speakerIndex: speakerIndex)
 
-            MeetingFooterView(attendees: attendees,
+            MeetingFooterView(attendees: scrum.attendees,
                               speakerIndex: speakerIndex) {
                 advanceSpeaker()
             }
         }
         .padding(.vertical)
+        .navigationTitle(scrum.title)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func advanceSpeaker() {
-        speakerIndex = (speakerIndex + 1) % attendees.count
+        speakerIndex = (speakerIndex + 1) % max(scrum.attendees.count, 1)
     }
 }
 
 #Preview {
-    MeetingView()
+    NavigationStack {
+        MeetingView(scrum: .constant(DailyScrum.sampleData[1]))
+    }
 }
