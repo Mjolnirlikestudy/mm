@@ -39,7 +39,9 @@ struct HistoryView: View {
 
                 Divider()
 
-                Text(history.transcript.isEmpty ? "No transcript" : history.transcript)
+                Text(history.transcript.isEmpty
+                     ? String(localized: "No transcript")
+                     : history.transcript)
                     .textSelection(.enabled)
             }
             .padding()

@@ -1,11 +1,43 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "NSMicrophoneUsageDescription" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Scrumdinger"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Scrumdinger"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Scrumdinger records audio during meetings and keeps it on your device."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Scrumdinger 会在会议期间录制音频，录音仅保存在本机。"
           }
         }

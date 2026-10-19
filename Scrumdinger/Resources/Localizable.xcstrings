@@ -1,6 +1,47 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld" : {},
+    "%lld attendees" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 位参会者"
+          }
+        }
+      }
+    },
+    "%lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 分钟"
+          }
+        }
+      }
+    },
+    "%lld minute meeting" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 分钟会议"
+          }
+        }
+      }
+    },
+    "%lld minutes" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 分钟"
+          }
+        }
+      }
+    },
     "An error has occurred!" : {
       "localizations" : {
         "zh-Hans" : {
@@ -252,6 +293,7 @@
       }
     },
     "No transcript" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -277,6 +319,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "播放录音"
+          }
+        }
+      }
+    },
+    "Plays the audio recorded during this meeting" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放本次会议的录音"
           }
         }
       }
@@ -357,46 +409,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "标题"
-          }
-        }
-      }
-    },
-    "%lld attendees" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld 位参会者"
-          }
-        }
-      }
-    },
-    "%lld min" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld 分钟"
-          }
-        }
-      }
-    },
-    "%lld minute meeting" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld 分钟会议"
-          }
-        }
-      }
-    },
-    "%lld minutes" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld 分钟"
           }
         }
       }

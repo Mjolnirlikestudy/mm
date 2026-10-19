@@ -3,6 +3,7 @@ build/
 DerivedData/
 *.xcuserstate
 xcuserdata/
+Scrumdinger.xcodeproj/project.xcworkspace/
 *.xcscmblueprint
 *.xccheckout
 

@@ -67,7 +67,7 @@ struct DetailEditView: View {
                     .padding(.vertical, 4)
             }
         }
-        .navigationTitle(isTitleEmpty ? "New Scrum" : draft.title)
+        .navigationTitle(isTitleEmpty ? Text("New Scrum") : Text(verbatim: draft.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
