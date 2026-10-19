@@ -27,7 +27,8 @@ struct MeetingView: View {
             MeetingTimerView(attendees: scrum.attendees,
                              speakerIndex: timer.activeSpeakerIndex,
                              secondsElapsed: timer.secondsElapsed,
-                             secondsPerAttendee: timer.secondsPerAttendee,
+                             spans: timer.speakerSpans(),
+                             totalSeconds: timer.totalSeconds,
                              mainColor: scrum.theme.main,
                              accentColor: scrum.theme.accent)
 

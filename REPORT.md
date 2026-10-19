@@ -24,7 +24,7 @@ Scrumdinger 面向需要主持每日站会（Daily Scrum）的软件团队。站
 1. 站会列表：卡片展示名称、参会人数、时长与主题色；
 2. 新建 / 编辑：标题、参会者、时长、7 套配色主题；
 3. 详情页：会议信息、参会者名单、历史记录入口；
-4. 会议计时：剩余时间、进度条、当前发言人、下一位；
+4. 会议计时：剩余时间、进度条、当前发言人、下一位（只切换发言人不打断计时）；
 5. 环形进度环：一人一段圆弧，走满自动切人并播放「叮」声，环满结束；
 6. 历史记录：会议结束自动生成，可查看并回放录音；
 7. 会议录音：AVFoundation 录制，保存在沙盒；
@@ -77,26 +77,26 @@ ScrumsView（NavigationStack + List）
 MeetingTimerView(attendees: scrum.attendees,
                  speakerIndex: timer.activeSpeakerIndex,
                  secondsElapsed: timer.secondsElapsed,
-                 secondsPerAttendee: timer.secondsPerAttendee,
+                 spans: timer.speakerSpans(),
+                 totalSeconds: timer.totalSeconds,
                  mainColor: scrum.theme.main,
                  accentColor: scrum.theme.accent)
 ```
 
 ### 4.2 绘图：环形进度环
 
-`SpeakerArc` 是一个 `Shape`，把 360° 按参会人数均分，第 `i` 段从 `i × 360/n - 90°` 开始（`-90°` 让第一段从 12 点方向起笔），当前发言人再按已用时间比例截断：
+`ScrumTimer` 把总时长切成若干「发言人时段」（`SpeakerSpan`），每段长度就是该发言人分到的时间。`SpeakerArc` 负责把「时段区间」换算成圆弧：
 
 ```swift
-let degreesPerSpeaker = 360.0 / Double(totalSpeakers)
-let startDegrees = Double(speakerIndex) * degreesPerSpeaker - 90
-let endDegrees = startDegrees + degreesPerSpeaker * min(max(fraction, 0), 1)
+let startDegrees = 360 * startFraction - 90
+let endDegrees = startDegrees + 360 * lengthFraction * fillFraction
 path.addArc(center: center, radius: radius,
             startAngle: .degrees(startDegrees),
             endAngle: .degrees(endDegrees),
             clockwise: false)
 ```
 
-`MeetingTimerView` 为每位参会者叠一个 `SpeakerArc`，用 `StrokeStyle(lineWidth: 12, lineCap: .butt)` 保证段与段之间不粘连；已讲完的人 `fraction = 1`，当前人按比例，未讲的人不画。计时器每前进 1 秒，`fraction` 随之增长，所以环形环与顶部进度条始终一致。
+`MeetingTimerView` 为每个 `SpeakerSpan` 画一段：已结束的段填满，当前段按 `(已用秒数 - 段起点) / 段长度` 填充，未来段为 0。因为所有时段相加正好等于总时长，环在会议结束时恰好填满 360°；点「下一位」只改变时段划分，不改变已用时间，所以环与顶部进度条都不会跳。
 
 ### 4.3 音频：提示音与录音
 
@@ -115,7 +115,7 @@ path.addArc(center: center, radius: radius,
 ### 4.5 网络数据与测试
 
 - `AttendeeService` 用 `URLSession` + `async/await` 请求 `https://jsonplaceholder.typicode.com/users`，取 `name` 字段作为参会者；10 秒超时、校验 HTTP 状态码，失败在编辑页弹「网络错误」提示；解码逻辑抽成静态方法，用固定 JSON 做单测，测试不依赖网络；
-- 单元测试：19 个用例，覆盖计时分段与叮声回调、结束边界、空参会者、模型 Codable 往返、时钟格式、主题预置、存储首启播种 / 保存重载 / 损坏文件兜底、网络解码；
+- 单元测试：20 个用例，覆盖初始时段均分、切人叮声回调、下一位不改变已用时间、跳过后的时间重分配、结束边界、空参会者、模型 Codable 往返、时钟格式、主题预置、存储首启播种 / 保存重载 / 损坏文件兜底、网络解码；
 - UI 测试：4 个用例，覆盖新建站会并重启验证持久化、逐屏截图、中文界面截图、深色模式截图。
 
 ## 5. 难点与解决方案
@@ -128,8 +128,9 @@ path.addArc(center: center, radius: radius,
 
 ### 5.2 计时、切人与「叮」声的时机
 
-现象：最初每秒刷新时用 `elapsed % 每人秒数 == 0` 判断切人，参会人数除不尽时会漏触发或重复触发。
-解决：`speakerIndex(for:)` 用 `Int(elapsed / secondsPerAttendee)` 做区间判断，只有索引真的变化才触发 `onSpeakerCompleted`；`tick()` 与真实时钟解耦，单元测试用循环调用 30 次覆盖「30 秒切第二人」的边界，避免依赖真实时间等待。
+现象：最初按 `elapsed % 每人秒数 == 0` 判断切人，参会人数除不尽时会漏触发或重复触发；更明显的问题是点「下一位」会把 `secondsElapsed` 直接写成下一段的起点，时钟一次跳掉几分钟，演示时非常像 bug。
+
+解决：把计时模型改成「全局连续时钟 + 发言人时段」。`tick()` 每秒只做 `secondsElapsed += 1`；当前发言人是否讲完，用「段起点 + 本段配额」得到的 `currentDeadline` 判断，到点才触发 `onSpeakerCompleted` 播放叮声。`nextSpeaker()` 只切换 `activeSpeakerIndex`，不碰时钟；被跳过的那位只占用实际讲过的秒数，剩余时间在剩余发言人之间重新平均分配，因此环仍然会在总时长走完时刚好填满。
 
 ### 5.3 环形环分段与「当前段」的衔接
 
@@ -172,7 +173,7 @@ xcodebuild -project Scrumdinger.xcodeproj -scheme Scrumdinger \
 
 ```
 Test Suite 'ScrumdingerTests.xctest' passed
-  Executed 19 tests, with 0 failures
+  Executed 20 tests, with 0 failures
 Test Suite 'ScrumdingerUITests.xctest' passed
   Executed 4 tests, with 0 failures
 ** TEST SUCCEEDED **
@@ -182,7 +183,7 @@ Test Suite 'ScrumdingerUITests.xctest' passed
 
 ### 覆盖场景
 
-- 计时：分段映射、切人叮声回调、走到总时长结束、结束后再 tick、空参会者、进度比例；
+- 计时：初始时段均分、切人叮声回调、下一位不改变已用时间、跳过后的时间重分配、走到总时长结束、结束后再 tick、空参会者、进度比例；
 - 模型：完整 Codable 往返、无录音字段的旧数据、时间格式化、主题预置与颜色往返；
 - 存储：首启播种并落盘、保存后重载、损坏 JSON 回退、目录不存在时自动创建；
 - 网络：固定 JSON 解码、limit 截断、非法数据抛错；

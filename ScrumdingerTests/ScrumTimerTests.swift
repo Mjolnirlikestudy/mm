@@ -2,21 +2,17 @@ import XCTest
 @testable import Scrumdinger
 
 final class ScrumTimerTests: XCTestCase {
-    func testSpeakerIndexMapping() {
+    func testInitialSpansSplitTotalEqually() {
         // 10 分钟 4 人 → 每人 150 秒
         let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
+        let spans = timer.speakerSpans()
 
-        XCTAssertEqual(timer.speakerIndex(for: 0), 0)
-        XCTAssertEqual(timer.speakerIndex(for: 149), 0)
-        XCTAssertEqual(timer.speakerIndex(for: 150), 1)
-        XCTAssertEqual(timer.speakerIndex(for: 451), 3)
-        XCTAssertEqual(timer.speakerIndex(for: 600), 3)
-    }
-
-    func testSecondsPerAttendeeUsesTotalLength() {
-        let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
-        XCTAssertEqual(timer.secondsPerAttendee, 150, accuracy: 0.001)
-        XCTAssertEqual(timer.secondsRemaining, 600)
+        XCTAssertEqual(spans.count, 4)
+        XCTAssertEqual(spans.map(\.start), [0, 150, 300, 450])
+        XCTAssertEqual(spans.map(\.end), [150, 300, 450, 600])
+        XCTAssertEqual(spans.first?.isActive, true)
+        XCTAssertEqual(timer.currentQuota, 150)
+        XCTAssertEqual(timer.totalSeconds, 600)
     }
 
     func testTickAdvancesSpeakerAndTriggersDing() {
@@ -48,18 +44,43 @@ final class ScrumTimerTests: XCTestCase {
         XCTAssertEqual(timer.secondsElapsed, 60)
     }
 
-    func testNextSpeakerJumpsToSpeakerBoundary() {
+    func testNextSpeakerDoesNotJumpElapsedTime() {
         let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
+        for _ in 0..<3 {
+            timer.tick()
+        }
+
         timer.nextSpeaker()
 
+        // 关键：切换发言人后已用时间仍然是 3 秒，时钟不跳
+        XCTAssertEqual(timer.secondsElapsed, 3)
         XCTAssertEqual(timer.activeSpeakerIndex, 1)
-        XCTAssertEqual(timer.secondsElapsed, 150)
 
-        // 最后一位再点「下一位」保持不动
+        // 第一位被提前结束，只占用 0–3 秒
+        let spans = timer.speakerSpans()
+        XCTAssertEqual(spans[0].start, 0)
+        XCTAssertEqual(spans[0].end, 3)
+        XCTAssertTrue(spans[0].isCompleted)
+        XCTAssertEqual(spans[1].start, 3)
+        XCTAssertTrue(spans[1].isActive)
+
+        // 剩余 597 秒由 3 人平分，每人 199 秒
+        XCTAssertEqual(timer.currentQuota, 199)
+        XCTAssertEqual(spans[1].end, 202)
+        XCTAssertEqual(spans.last?.end, 600)
+    }
+
+    func testNextSpeakerAtLastSpeakerIsNoOp() {
+        let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
+
         timer.nextSpeaker()
         timer.nextSpeaker()
         timer.nextSpeaker()
         XCTAssertEqual(timer.activeSpeakerIndex, 3)
+
+        timer.nextSpeaker()
+        XCTAssertEqual(timer.activeSpeakerIndex, 3)
+        XCTAssertEqual(timer.secondsElapsed, 0)
     }
 
     func testEmptyAttendeesDoesNotCrash() {
@@ -67,7 +88,7 @@ final class ScrumTimerTests: XCTestCase {
         timer.tick()
         timer.nextSpeaker()
 
-        XCTAssertEqual(timer.secondsPerAttendee, 0)
+        XCTAssertTrue(timer.speakerSpans().isEmpty)
         XCTAssertEqual(timer.activeSpeakerIndex, 0)
         XCTAssertEqual(timer.secondsElapsed, 1)
     }
@@ -78,5 +99,19 @@ final class ScrumTimerTests: XCTestCase {
             timer.tick()
         }
         XCTAssertEqual(timer.progress, 0.25, accuracy: 0.001)
+    }
+
+    func testSkippingRedistributesRemainingTime() {
+        let timer = ScrumTimer(lengthInMinutes: 10, attendees: ["A", "B", "C", "D"])
+
+        // 第一位只用了 10 秒就跳过，剩余 590 秒由 3 人平分（196 / 197 秒）
+        for _ in 0..<10 {
+            timer.tick()
+        }
+        timer.nextSpeaker()
+
+        XCTAssertEqual(timer.secondsElapsed, 10)
+        XCTAssertEqual(timer.currentQuota, 196)
+        XCTAssertEqual(timer.speakerSpans().reduce(0) { $0 + ($1.end - $1.start) }, 600)
     }
 }
