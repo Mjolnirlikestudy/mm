@@ -18,6 +18,7 @@ struct ThemePicker: View {
                 }
             }
             .padding(.vertical, 4)
+            .padding(.horizontal, 2)
         }
     }
 }

@@ -1,0 +1,16 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSMicrophoneUsageDescription" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrumdinger 会在会议期间录制音频，录音仅保存在本机。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

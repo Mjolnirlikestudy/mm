@@ -4,6 +4,8 @@ struct DetailEditView: View {
     private let onSave: (DailyScrum) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var draft: DailyScrum
+    @State private var isFetchingAttendees = false
+    @State private var networkErrorMessage: String?
 
     init(scrum: DailyScrum, onSave: @escaping (DailyScrum) -> Void) {
         _draft = State(initialValue: scrum)
@@ -26,11 +28,35 @@ struct DetailEditView: View {
         draft.title.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    private var isShowingNetworkError: Binding<Bool> {
+        Binding {
+            networkErrorMessage != nil
+        } set: { isPresented in
+            if !isPresented {
+                networkErrorMessage = nil
+            }
+        }
+    }
+
     var body: some View {
         Form {
             Section("Meeting Info") {
                 TextField("Title", text: $draft.title)
                 TextField("Attendees", text: attendeesText)
+
+                Button {
+                    Task { await fetchAttendees() }
+                } label: {
+                    HStack {
+                        Label("Fetch Attendees", systemImage: "person.crop.circle.badge.plus")
+                        Spacer()
+                        if isFetchingAttendees {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isFetchingAttendees)
+
                 Stepper(value: $draft.lengthInMinutes, in: 5...30, step: 5) {
                     Text("\(draft.lengthInMinutes) minutes")
                 }
@@ -54,6 +80,27 @@ struct DetailEditView: View {
                 }
                 .disabled(isTitleEmpty)
             }
+        }
+        .alert("Network Error", isPresented: isShowingNetworkError) {
+            Button("OK", role: .cancel) {
+                networkErrorMessage = nil
+            }
+        } message: {
+            Text("Could not fetch attendees: \(networkErrorMessage ?? "")")
+        }
+    }
+
+    @MainActor
+    private func fetchAttendees() async {
+        isFetchingAttendees = true
+        defer { isFetchingAttendees = false }
+        do {
+            let names = try await AttendeeService().fetchAttendees()
+            if !names.isEmpty {
+                draft.attendees = names
+            }
+        } catch {
+            networkErrorMessage = error.localizedDescription
         }
     }
 }
