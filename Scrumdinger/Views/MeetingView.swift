@@ -2,37 +2,90 @@ import SwiftUI
 
 struct MeetingView: View {
     @Binding var scrum: DailyScrum
-    @State private var secondsElapsed = 0
-    @State private var speakerIndex = 0
+    @StateObject private var timer: ScrumTimer
+    @StateObject private var recorder = AudioRecorder()
+    @Environment(\.dismiss) private var dismiss
 
-    private var secondsRemaining: Int {
-        max(scrum.lengthInMinutes * 60 - secondsElapsed, 0)
+    init(scrum: Binding<DailyScrum>) {
+        _scrum = scrum
+        let value = scrum.wrappedValue
+        _timer = StateObject(wrappedValue: ScrumTimer(lengthInMinutes: value.lengthInMinutes,
+                                                      attendees: value.attendees))
     }
 
     var body: some View {
         VStack(spacing: 20) {
-            ProgressView(value: Double(secondsElapsed),
-                         total: Double(scrum.lengthInMinutes * 60))
+            ProgressView(value: Double(timer.secondsElapsed),
+                         total: Double(max(timer.totalSeconds, 1)))
+                .tint(scrum.theme.main)
                 .padding(.horizontal)
 
-            MeetingHeaderView(secondsRemaining: secondsRemaining,
+            MeetingHeaderView(secondsElapsed: timer.secondsElapsed,
+                              secondsRemaining: timer.secondsRemaining,
                               numberOfAttendees: scrum.attendees.count)
 
             MeetingTimerView(attendees: scrum.attendees,
-                             speakerIndex: speakerIndex)
+                             speakerIndex: timer.activeSpeakerIndex,
+                             secondsElapsed: timer.secondsElapsed,
+                             secondsPerAttendee: timer.secondsPerAttendee,
+                             mainColor: scrum.theme.main,
+                             accentColor: scrum.theme.accent)
 
             MeetingFooterView(attendees: scrum.attendees,
-                              speakerIndex: speakerIndex) {
-                advanceSpeaker()
+                              speakerIndex: timer.activeSpeakerIndex) {
+                timer.nextSpeaker()
             }
         }
         .padding(.vertical)
         .navigationTitle(scrum.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    recorder.toggle()
+                } label: {
+                    Image(systemName: recorder.isRecording ? "mic.fill" : "mic")
+                        .foregroundStyle(recorder.isRecording ? .red : .primary)
+                }
+                .accessibilityLabel(recorder.isRecording ? "Stop recording" : "Start recording")
+
+                Button("End", role: .destructive) {
+                    endMeeting()
+                }
+            }
+        }
+        .onAppear {
+            timer.onSpeakerCompleted = {
+                DingPlayer.shared.play()
+            }
+            timer.start()
+        }
+        .onDisappear {
+            timer.stop()
+            recorder.stop()
+        }
+        .onChange(of: timer.isFinished) { _, isFinished in
+            if isFinished {
+                endMeeting()
+            }
+        }
+        .alert(item: $recorder.alert) { alert in
+            Alert(title: Text("Recording"),
+                  message: Text(alert.message),
+                  dismissButton: .default(Text("OK")))
+        }
     }
 
-    private func advanceSpeaker() {
-        speakerIndex = (speakerIndex + 1) % max(scrum.attendees.count, 1)
+    /// 结束会议：停止录音，把本次会议写入历史记录并返回详情页。
+    private func endMeeting() {
+        timer.stop()
+        recorder.stop()
+        if timer.secondsElapsed > 0 {
+            scrum.history.append(History(attendees: scrum.attendees,
+                                         lengthInMinutes: scrum.lengthInMinutes,
+                                         recordingFileName: recorder.lastRecordingFileName))
+        }
+        dismiss()
     }
 }
 

@@ -1,7 +1,15 @@
+import AVFoundation
 import SwiftUI
 
 struct HistoryView: View {
     let history: History
+    @State private var audioPlayer: AVAudioPlayer?
+
+    private var recordingURL: URL? {
+        guard let fileName = history.recordingFileName else { return nil }
+        let url = RecordingStorage.url(for: fileName)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
 
     var body: some View {
         ScrollView {
@@ -17,6 +25,17 @@ struct HistoryView: View {
                 }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+                if let recordingURL {
+                    Button {
+                        audioPlayer = try? AVAudioPlayer(contentsOf: recordingURL)
+                        audioPlayer?.play()
+                    } label: {
+                        Label("Play Recording", systemImage: "play.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityHint("Plays the audio recorded during this meeting")
+                }
 
                 Divider()
 

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MeetingHeaderView: View {
+    let secondsElapsed: Int
     let secondsRemaining: Int
     let numberOfAttendees: Int
 
@@ -12,6 +13,10 @@ struct MeetingHeaderView: View {
                     .foregroundStyle(.secondary)
                 Text(secondsRemaining.clockTime)
                     .font(.system(.title, design: .rounded, weight: .semibold))
+                    .monospacedDigit()
+                Text("Elapsed \(secondsElapsed.clockTime)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
             Spacer()
@@ -30,6 +35,6 @@ struct MeetingHeaderView: View {
 }
 
 #Preview {
-    MeetingHeaderView(secondsRemaining: 300, numberOfAttendees: 4)
+    MeetingHeaderView(secondsElapsed: 65, secondsRemaining: 235, numberOfAttendees: 4)
         .padding()
 }
