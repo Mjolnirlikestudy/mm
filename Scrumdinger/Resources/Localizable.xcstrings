@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%lld" : {},
+    "%lld" : {
+
+    },
     "%lld attendees" : {
       "localizations" : {
         "zh-Hans" : {
@@ -293,7 +295,6 @@
       }
     },
     "No transcript" : {
-      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
