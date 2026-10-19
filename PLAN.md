@@ -127,3 +127,27 @@ Scrumdinger/
 - 录音在模拟器上受限，需在报告与演示话术中说明。
 - `ding.wav` 版权：优先用自制合成音，避免引入第三方素材。
 - 待办：`git init`、`.gitignore`、修正 Bundle ID、`knownRegions` 增加 `zh-Hans`。
+
+## 10. 实施记录（2026-10-19）
+
+### 已完成
+
+| 阶段 | 结果 |
+|---|---|
+| S1 | 工程重建为 `Scrumdinger.xcodeproj`（目标名、Bundle ID 修正），Meeting 界面骨架可运行 |
+| S2 | 列表 / 详情 / 编辑 / 新建全流程打通，主题切换可用 |
+| S3–S5 | `ScrumTimer` 计时与叮声、JSON 持久化与错误兜底、`SpeakerArc` 环形进度环、`AudioRecorder` 录音与历史回放 |
+| S6 | 19 个 XCTest 单元测试 + 4 个 UI 测试（含截图用例），全部通过 |
+| S7 | 中英双语 String Catalog、`AttendeeService` 网络参会者、深色模式与设计打磨 |
+| S8 | README、实训报告、运行截图、测试日志 |
+
+### 与计划的偏差
+
+1. **提交粒度**：S3、S4、S5 实现在同一轮完成，合并为一次提交 `feat(S3-S5)`，未做到每阶段独立提交。
+2. **网络示例形式**：改为编辑页「从网络获取参会者」（JSONPlaceholder users 接口），比「详情页导入模板」更稳定、语义更自然。
+3. **测试产出截图**：截图由 `ScrumdingerUITests` 自动产出到 runner 沙盒，再拷回 `screenshots/`，保证与代码版本一致。
+4. **未做项**：UIKit 模块、iPad / macOS 适配（按已确认范围排除）。
+
+### 验收对照
+
+评分表八个维度均有对应实现与说明；测试命令、截图与报告分别见 `test-results.txt`、`screenshots/`、`REPORT.md`。
